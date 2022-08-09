@@ -14,6 +14,8 @@ local BASE_URL = ClientTrackerAPI.BASE_URL
 local PATHS = ClientTrackerAPI.PATHS
 local DEPENDS = ClientTrackerAPI.DEPENDS
 
+local PluginCurrentlyProcessing = false
+
 local function getForkedFolder()
 	if StarterPlayerScripts:FindFirstChild("_Forked") then
 		return StarterPlayerScripts._Forked
@@ -210,9 +212,12 @@ local toolbar: PluginToolbar = plugin:CreateToolbar(if IS_LOCAL then "(Local) Pl
 local updateAll = toolbar:CreateButton("Update All", "Update all scripts to latest", scriptIcon)
 updateAll.ClickableWhenViewportHidden = true
 updateAll.Click:Connect(function()
+	if PluginCurrentlyProcessing then return end
+	PluginCurrentlyProcessing = true
 	for name, _ in pairs(PATHS) do
 		updateModule(name)
 	end
+	PluginCurrentlyProcessing = false
 end)
 
 local generateLoader = toolbar:CreateButton("Generate Loader", "Generate PlayerScriptsLoader which loads the modules in PlayerScripts._Forked", scriptIcon)
@@ -292,7 +297,10 @@ for name, path in pairs(PATHS) do
 	local lastUpdate = container:FindFirstChild("LastUpdate")
 	
 	container:FindFirstChild("Update").Activated:Connect(function()
+		if PluginCurrentlyProcessing then return end
+		PluginCurrentlyProcessing = true
 		updateModule(name)
+		PluginCurrentlyProcessing = false
 		lastUpdate.Text = getForkedFolder():FindFirstChild(name, true):GetAttribute("LastUpdate") or "unknown"
 	end)
 	if module then
