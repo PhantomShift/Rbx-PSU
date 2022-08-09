@@ -7,7 +7,9 @@ The plugin is a relatively simple tool, grabbing the latest versions of the Play
 
 The plugin itself is freely available [here](https://www.roblox.com/library/10517423170/Player-Script-Updater), but if you prefer to see the code yourself and even make edits to it (feel free to do so), the plugin is contained in the `src` directory. Once you have the folder in Studio, right click and select "Save as Local Plugin..."
 
+## Getting Plugin Locally
 There are two main ways of getting the folder:
+
 ### Studio Commandline
 Copy and paste the following code into Studio's command line interface. Requires Http access, though the plugin itself requires it as well so this should be on anyways. This will create the folder with all the scripts within in `ServerStorage`.
 ```lua
