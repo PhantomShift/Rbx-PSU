@@ -1,5 +1,4 @@
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
-local ScriptEditorService = game:GetService("ScriptEditorService")
 
 local Diff = require(script.Parent.Diff)
 local Utils = require(script.Parent.Utils)
@@ -43,11 +42,6 @@ local function grabModule(moduleName: string, parent: Instance)
 end
 
 local function createDifferencePrompt(original, new)
-	local difference = Diff.getMultiLineDiff(original, new)
-	local diffText = ""
-	for _, diff in pairs(difference) do
-		diffText ..= ("%s%s\n"):format(diff.token, diff.str)
-	end
 	local widgetInfo = DockWidgetPluginGuiInfo.new(
 		Enum.InitialDockState.Float,
 		true,
@@ -101,16 +95,60 @@ local function createDifferencePrompt(original, new)
 	--widget:Destroy()
 	
 	if accepted then
-		local temp = Instance.new("ModuleScript")
-		temp.Name = "Changes"
-		--temp.Source = new
-		temp.Source = Diff.TOKEN_KEYS..diffText
-		temp.Parent = workspace
-		plugin:OpenScript(temp)
-		Utils.waitForCondition(ScriptEditorService.TextDocumentDidClose, function(doc)
-			return doc == ScriptEditorService:FindScriptDocument(temp)
-		end)
-		temp:Destroy()
+		local difference = Diff.getMultiLineDiff(original, new)
+
+		-- Render difference prompt
+		local diffWidget: DockWidgetPluginGui = plugin:CreateDockWidgetPluginGui("ScriptDifferencesPrompt", widgetInfo)
+		diffWidget.Title = "Differences"
+		local container = Instance.new("ScrollingFrame")
+		container.Size = UDim2.fromScale(1, 1)
+		container.AutomaticCanvasSize = Enum.AutomaticSize.XY
+		local listlayout = Instance.new("UIListLayout")
+		listlayout.Parent = container
+		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+		for i, diff in ipairs(difference) do
+			local row = Instance.new("Frame")
+			row.LayoutOrder = i
+			row.Size = UDim2.new(1, 0, 0, 20)
+			row.AutomaticSize = Enum.AutomaticSize.X
+			row:SetAttribute("BackgroundColor3", settings().Studio.Theme:GetColor(
+				if diff.token == Diff.INSERT_TOKEN then Enum.StudioStyleGuideColor.DiffTextAdditionBackground
+				elseif diff.token == Diff.REMOVE_TOKEN then Enum.StudioStyleGuideColor.DiffTextDeletionBackground
+				else Enum.StudioStyleGuideColor.DiffTextNoChangeBackground
+			))
+			local box = Instance.new("TextBox")
+			box.Text = diff.str:gsub("\t", "    ")
+			box.Size = UDim2.new(1, -50, 1, 0)
+			box.AutomaticSize = Enum.AutomaticSize.X
+			box.Position = UDim2.fromOffset(50, 0)
+			box.BackgroundTransparency = 1
+			box.TextEditable = false
+			box.ClearTextOnFocus = false
+			box.TextXAlignment = Enum.TextXAlignment.Left
+			box:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
+			box:SetAttribute("TextSize", 18)
+			local line = Instance.new("TextBox")
+			line.Text = tostring(i)
+			line.Size = UDim2.new(0, 30, 1, 0)
+			line.Position = UDim2.fromOffset(20, 0)
+			line.BackgroundTransparency = 1
+			line.TextEditable = false
+			line.ClearTextOnFocus = false
+			local token = Instance.new("TextLabel")
+			token.Text = diff.token
+			token.Size = UDim2.new(0, 20, 1, 0)
+			token.BackgroundTransparency = 1
+
+			line.Parent = row
+			token.Parent = row
+			box.Parent = row
+
+			row.Parent = container
+		end
+		container.Parent = diffWidget
+		applyThemeWidget(diffWidget)
+		diffWidget:BindToClose(function() diffWidget:Destroy() end)
+		diffWidget.AncestryChanged:Wait()
 	end
 	
 	label.Text = "Accept changes to script?"

@@ -38,10 +38,10 @@ local function computeLCS(s1, s2)
 end
 
 local SAME_TOKEN = ""
-local INSERT_TOKEN = "--[[+++++]]--\n"
-local REMOVE_TOKEN = "--[[-----]]--\n"
+local INSERT_TOKEN = "+"
+local REMOVE_TOKEN = "-"
 
-local TOKEN_KEYS = "--Keys:\n--[[+++++]]-- = Insertion\n--[[-----]]-- = Removal\n\n"
+local TOKEN_KEYS = "--Keys:\n"..INSERT_TOKEN.." = Insertion\n"..REMOVE_TOKEN.."= Removal\n\n"
 
 local function getDiff(c: {{number}}, s1, s2, i: number, j: number)
 	if type(s1) == "string" then s1 = s1:split("") end
