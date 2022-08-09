@@ -10,7 +10,7 @@ return {
     -- instead of using the difference viewer widget
     -- Highlighting differences is unfortunately not supported,
     -- but changes made to the temporary script will be applied
-    -- No effect if scriptDifferencePrompt is false
+    -- No effect if skipDifferencePrompt is true
     scriptEditorServiceBeta = false
 }
 ]]
