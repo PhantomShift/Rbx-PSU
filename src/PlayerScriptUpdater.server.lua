@@ -3,6 +3,7 @@ local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local Diff = require(script.Parent.Diff)
 local Utils = require(script.Parent.Utils)
 local ClientTrackerAPI = require(script.Parent.ClientTrackerAPI)
+local Env = require(script.Parent.Env)
 
 local applyThemeWidget = require(script.Parent.ApplyThemeWidget)
 
@@ -57,7 +58,9 @@ local function createDifferencePrompt(original, new)
 	bg.Size = UDim2.fromScale(1, 1)
 	
 	local label = Instance.new("TextLabel")
-	label.Text = "Script changes detected, view difference?"
+	label.Text = if Env("skipDifferencePrompt") then "Script changes detected, apply changes?"
+				 elseif Env("scriptEditorServiceBeta") then "Script changes detected, view and edit changes?"
+				 else "Script changes detected, view changes?"
 	label.TextSize = 10
 	label.TextWrapped = true
 	label.Size = UDim2.new(1, 0, 0, 50)
@@ -86,80 +89,94 @@ local function createDifferencePrompt(original, new)
 	end)
 	
 	local bind = Instance.new("BindableEvent")
-	--widget.AncestryChanged:Once(function() bind:Fire(false) end)
+	bind.Parent = widget
 	widget:BindToClose(function() bind:Fire(false) end)
-	local noConn = no.Activated:Connect(function() bind:Fire(false) end)
-	local yesConn = yes.Activated:Connect(function() bind:Fire(true) end)
+	no.Activated:Connect(function() bind:Fire(false) end)
+	yes.Activated:Connect(function() bind:Fire(true) end)
 	local accepted = bind.Event:Wait()
 	widget.Enabled = false
-	--widget:Destroy()
+	
+	if Env("skipDifferencePrompt") then
+		widget:Destroy()
+		return accepted, new
+	end
 	
 	if accepted then
-		local difference = Diff.getMultiLineDiff(original, new)
-
-		-- Render difference prompt
-		local diffWidget: DockWidgetPluginGui = plugin:CreateDockWidgetPluginGui("ScriptDifferencesPrompt", widgetInfo)
-		diffWidget.Title = "Differences"
-		local container = Instance.new("ScrollingFrame")
-		container.Size = UDim2.fromScale(1, 1)
-		container.AutomaticCanvasSize = Enum.AutomaticSize.XY
-		local listlayout = Instance.new("UIListLayout")
-		listlayout.Parent = container
-		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
-		for i, diff in ipairs(difference) do
-			local row = Instance.new("Frame")
-			row.LayoutOrder = i
-			row.Size = UDim2.new(1, 0, 0, 20)
-			row.AutomaticSize = Enum.AutomaticSize.X
-			row:SetAttribute("BackgroundColor3", settings().Studio.Theme:GetColor(
-				if diff.token == Diff.INSERT_TOKEN then Enum.StudioStyleGuideColor.DiffTextAdditionBackground
-				elseif diff.token == Diff.REMOVE_TOKEN then Enum.StudioStyleGuideColor.DiffTextDeletionBackground
-				else Enum.StudioStyleGuideColor.DiffTextNoChangeBackground
-			))
-			local box = Instance.new("TextBox")
-			box.Text = diff.str:gsub("\t", "    ")
-			box.Size = UDim2.new(1, -50, 1, 0)
-			box.AutomaticSize = Enum.AutomaticSize.X
-			box.Position = UDim2.fromOffset(50, 0)
-			box.BackgroundTransparency = 1
-			box.TextEditable = false
-			box.ClearTextOnFocus = false
-			box.TextXAlignment = Enum.TextXAlignment.Left
-			box:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
-			box:SetAttribute("TextSize", 18)
-			local line = Instance.new("TextBox")
-			line.Text = tostring(i)
-			line.Size = UDim2.new(0, 30, 1, 0)
-			line.Position = UDim2.fromOffset(20, 0)
-			line.BackgroundTransparency = 1
-			line.TextEditable = false
-			line.ClearTextOnFocus = false
-			local token = Instance.new("TextLabel")
-			token.Text = diff.token
-			token.Size = UDim2.new(0, 20, 1, 0)
-			token.BackgroundTransparency = 1
-
-			line.Parent = row
-			token.Parent = row
-			box.Parent = row
-
-			row.Parent = container
+		if Env("scriptEditorServiceBeta") then
+			local ScriptEditorService = game:GetService("ScriptEditorService")
+			local temp = Instance.new("ModuleScript")
+			temp.Name = "Updated Module | Changes Save | Close to Continue"
+			temp.Source = new
+			temp.Parent = workspace
+			plugin:OpenScript(temp)
+			Utils.waitForCondition(ScriptEditorService.TextDocumentDidClose, function(doc)
+				return doc == ScriptEditorService:FindScriptDocument(temp)
+			end)
+			new = temp.Source
+			temp:Destroy()
+		else
+			local difference = Diff.getMultiLineDiff(original, new)
+			-- Render difference prompt
+			local diffWidget: DockWidgetPluginGui = plugin:CreateDockWidgetPluginGui("ScriptDifferencesPrompt", widgetInfo)
+			diffWidget.Title = "Changes | Close to Continue"
+			local container = Instance.new("ScrollingFrame")
+			container.Size = UDim2.fromScale(1, 1)
+			container.AutomaticCanvasSize = Enum.AutomaticSize.XY
+			local listlayout = Instance.new("UIListLayout")
+			listlayout.Parent = container
+			listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+			for i, diff in ipairs(difference) do
+				local row = Instance.new("Frame")
+				row.LayoutOrder = i
+				row.Size = UDim2.new(1, 0, 0, 20)
+				row.AutomaticSize = Enum.AutomaticSize.X
+				row:SetAttribute("BackgroundColor3", settings().Studio.Theme:GetColor(
+					if diff.token == Diff.INSERT_TOKEN then Enum.StudioStyleGuideColor.DiffTextAdditionBackground
+					elseif diff.token == Diff.REMOVE_TOKEN then Enum.StudioStyleGuideColor.DiffTextDeletionBackground
+					else Enum.StudioStyleGuideColor.DiffTextNoChangeBackground
+				))
+				local box = Instance.new("TextBox")
+				box.Text = diff.str:gsub("\t", "    ")
+				box.Size = UDim2.new(1, -50, 1, 0)
+				box.AutomaticSize = Enum.AutomaticSize.X
+				box.Position = UDim2.fromOffset(50, 0)
+				box.BackgroundTransparency = 1
+				box.TextEditable = false
+				box.ClearTextOnFocus = false
+				box.TextXAlignment = Enum.TextXAlignment.Left
+				box:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
+				box:SetAttribute("TextSize", 18)
+				local line = Instance.new("TextBox")
+				line.Text = tostring(i)
+				line.Size = UDim2.new(0, 30, 1, 0)
+				line.Position = UDim2.fromOffset(20, 0)
+				line.BackgroundTransparency = 1
+				line.TextEditable = false
+				line.ClearTextOnFocus = false
+				local token = Instance.new("TextLabel")
+				token.Text = diff.token
+				token.Size = UDim2.new(0, 20, 1, 0)
+				token.BackgroundTransparency = 1
+	
+				line.Parent = row
+				token.Parent = row
+				box.Parent = row
+	
+				row.Parent = container
+			end
+			container.Parent = diffWidget
+			applyThemeWidget(diffWidget)
+			diffWidget:BindToClose(function() diffWidget:Destroy() end)
+			diffWidget.AncestryChanged:Wait()
 		end
-		container.Parent = diffWidget
-		applyThemeWidget(diffWidget)
-		diffWidget:BindToClose(function() diffWidget:Destroy() end)
-		diffWidget.AncestryChanged:Wait()
 	end
 	
 	label.Text = "Accept changes to script?"
 	widget.Enabled = true
 	local acceptChanges = bind.Event:Wait()
 	
-	noConn:Disconnect()
-	yesConn:Disconnect()
-	
 	widget:Destroy()
-	return acceptChanges
+	return acceptChanges, new
 end
 
 local function updateModule(moduleName: string)
@@ -170,12 +187,16 @@ local function updateModule(moduleName: string)
 		parent = grabModule(name, parent)
 	end
 	local module = grabModule(moduleName, parent)
+
 	local date = ClientTrackerAPI.getLastCommitDate(moduleName)
-	if module:GetAttribute("LastUpdate") ~= date then
+	if Env("alwaysUpdate") or module:GetAttribute("LastUpdate") ~= date then
 		local r, e = ClientTrackerAPI.attemptGetScriptSource(moduleName)
 		if not r then error(("Failed to grab script from Roblox Client Tracker, error: %s"):format(e)) end
-		local acceptChanges = createDifferencePrompt(module.Source, r)
-		if not acceptChanges then return end
+		if not Env("alwaysUpdate") then
+			local acceptChanges, edited = createDifferencePrompt(module.Source, r)
+			if not acceptChanges then return end
+			r = edited
+		end
 		module.Source = r
 		module:SetAttribute("LastUpdate", date)
 		warn(("Module %s has been changed"):format(moduleName))
@@ -294,3 +315,11 @@ applyThemeWidget(widget)
 local openMenu = toolbar:CreateButton("Toggle Menu", "View and update specific modules", scriptIcon)
 openMenu.ClickableWhenViewportHidden = true
 openMenu.Click:Connect(function() widget.Enabled = not widget.Enabled end)
+
+local openEnv = toolbar:CreateButton("Environment", "View and change current environment variables", scriptIcon)
+openEnv.ClickableWhenViewportHidden = true
+openEnv.Click:Connect(function()
+	pcall(function()
+		plugin:OpenScript(game:GetService("AnalyticsService"):FindFirstChild("RobloxPSU_Environment"))
+	end)
+end)
