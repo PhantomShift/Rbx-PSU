@@ -21,7 +21,9 @@ targetFolder.Parent = game.ServerStorage
 
 for _, file in ipairs(tbl) do
     if file.type == "file" then
-        local scr = if file.name:find("server.lua") then Instance.new("Script") elseif file.name:find("client.lua") then Instance.new("LocalScript") else Instance.new("ModuleScript")
+        local split = file.name:split(".")
+        if split[2] == "meta" then continue end
+        local scr = if split[2] == "server" then Instance.new("Script") elseif split[2] == "client" then Instance.new("LocalScript") else Instance.new("ModuleScript")
         if scr:IsA("LocalScript") then scr.Disabled = true end
 
         scr.Name = file.name:split(".")[1]
