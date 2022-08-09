@@ -44,7 +44,7 @@ local function grabModule(moduleName: string, parent: Instance)
 	return Module
 end
 
-local function createDifferencePrompt(original, new)
+local function createDifferencePrompt(original: string, new: string, moduleName: string)
 	local widgetInfo = DockWidgetPluginGuiInfo.new(
 		Enum.InitialDockState.Float,
 		true,
@@ -60,9 +60,10 @@ local function createDifferencePrompt(original, new)
 	bg.Size = UDim2.fromScale(1, 1)
 	
 	local label = Instance.new("TextLabel")
-	label.Text = if Env("skipDifferencePrompt") then "Script changes detected, apply changes?"
-				 elseif Env("scriptEditorServiceBeta") then "Script changes detected, view and edit changes?"
-				 else "Script changes detected, view changes?"
+	local labelText = if Env("skipDifferencePrompt") then "Script changes detected for %s, apply changes?"
+					  elseif Env("scriptEditorServiceBeta") then "Script changes detected for %s, view and edit changes?"
+					  else "Script changes detected for %s, view changes?"
+	label.Text = labelText:format(moduleName)
 	label.TextSize = 10
 	label.TextWrapped = true
 	label.Size = UDim2.new(1, 0, 0, 50)
@@ -107,7 +108,7 @@ local function createDifferencePrompt(original, new)
 		if Env("scriptEditorServiceBeta") then
 			local ScriptEditorService = game:GetService("ScriptEditorService")
 			local temp = Instance.new("ModuleScript")
-			temp.Name = "Updated Module | Changes Save | Close to Continue"
+			temp.Name = ("Updated %s | Changes Save | Close to Continue"):format(moduleName)
 			temp.Source = new
 			temp.Parent = workspace
 			plugin:OpenScript(temp)
@@ -120,7 +121,7 @@ local function createDifferencePrompt(original, new)
 			local difference = Diff.getMultiLineDiff(original, new)
 			-- Render difference prompt
 			local diffWidget: DockWidgetPluginGui = plugin:CreateDockWidgetPluginGui("ScriptDifferencesPrompt", widgetInfo)
-			diffWidget.Title = "Changes | Close to Continue"
+			diffWidget.Title = ("Changes to %s | Close to Continue"):format(moduleName)
 			local container = Instance.new("ScrollingFrame")
 			container.Size = UDim2.fromScale(1, 1)
 			container.AutomaticCanvasSize = Enum.AutomaticSize.XY
@@ -173,7 +174,7 @@ local function createDifferencePrompt(original, new)
 		end
 	end
 	
-	label.Text = "Accept changes to script?"
+	label.Text = ("Accept changes to %s?"):format(moduleName)
 	widget.Enabled = true
 	local acceptChanges = bind.Event:Wait()
 	
@@ -195,7 +196,7 @@ local function updateModule(moduleName: string)
 		local r, e = ClientTrackerAPI.attemptGetScriptSource(moduleName)
 		if not r then error(("Failed to grab script from Roblox Client Tracker, error: %s"):format(e)) end
 		if not Env("alwaysUpdate") then
-			local acceptChanges, edited = createDifferencePrompt(module.Source, r)
+			local acceptChanges, edited = createDifferencePrompt(module.Source, r, moduleName)
 			if not acceptChanges then return end
 			r = edited
 		end
