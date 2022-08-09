@@ -1,0 +1,22 @@
+{
+    "name": "Player Scipts Updater Development",
+    "tree": {
+        "$className": "DataModel",
+        
+        "ServerStorage": {
+            "$className": "ServerStorage",
+            
+            "PlayerScriptsUpdaterPlugin": {
+                "$className": "Folder",
+                "$path": "src",
+
+                "PlayerScriptsLoader": {
+                    "$path": "src/PlayerScriptsLoader.client.lua",
+                    "$properties": {
+                        "Disabled": true
+                    }
+                }
+            }
+        }
+    }
+}

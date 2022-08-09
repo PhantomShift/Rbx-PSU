@@ -1,0 +1,13 @@
+{
+    "name": "PlayerScriptUpdater",
+    "tree": {
+        "$path": "src",
+
+        "PlayerScriptsLoader": {
+            "$path": "src/PlayerScriptsLoader.client.lua",
+            "$properties": {
+                "Disabled": true
+            }
+        }
+    }
+}
