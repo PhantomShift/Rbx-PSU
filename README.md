@@ -7,6 +7,26 @@ The plugin is a relatively simple tool, grabbing the latest versions of the Play
 
 The plugin itself is freely available [here](https://www.roblox.com/library/10517423170/Player-Script-Updater), but if you prefer to see the code yourself and even make edits to it (feel free to do so), the plugin is contained in the `src` directory. Once you have the folder in Studio, right click and select "Save as Local Plugin..."
 
+### Environment Variables
+There are a couple of environment variables that can be used to change the plugin's behavior. These variables can be accessed via the toolbar.
+```lua
+-- Example
+return {
+    -- Whether or not to skip viewing differences on updated modules
+    skipDifferencePrompt = false,
+
+    -- Skip update check and ALWAYS replace forked module with one grabbed from Roblox Client Tracker
+    alwaysUpdate = false,
+
+    -- Use ServerScriptService to pull up a temporary script that displays the changes made
+    -- instead of using the difference viewer widget
+    -- Highlighting differences is unfortunately not supported,
+    -- but changes made to the temporary script will be applied
+    -- No effect if skipDifferencePrompt is true
+    scriptEditorServiceBeta = false
+}
+```
+
 ## Getting Plugin Locally
 There are two main ways of getting the folder:
 
