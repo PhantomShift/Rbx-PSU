@@ -22,18 +22,21 @@ if not environment then
     environment.Source = DEFAULT_ENV
     environment.Parent = game:GetService("AnalyticsService")
 end
-local proxyEnvironment = environment:FindFirstChild("ModuleScript")
-if not proxyEnvironment then
-    proxyEnvironment = Instance.new("ModuleScript")
-    proxyEnvironment.Source = environment.Source
-    proxyEnvironment.Parent = environment
+if environment:FindFirstChild("ModuleScript") then
+    environment.ModuleScript:Destroy()
 end
+local proxyEnvironment = Instance.new("ModuleScript")
+proxyEnvironment.Source = environment.Source
+proxyEnvironment.Archivable = false
+proxyEnvironment.Parent = environment
+
 environment:GetPropertyChangedSignal("Source"):Connect(function()
     local success = pcall(require, environment)
     if success then
         proxyEnvironment:Destroy()
         proxyEnvironment = Instance.new("ModuleScript")
         proxyEnvironment.Source = environment.Source
+        proxyEnvironment.Archivable = false
         proxyEnvironment.Parent = environment
     end
 end)
