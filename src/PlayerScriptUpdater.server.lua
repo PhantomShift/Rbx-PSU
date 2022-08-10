@@ -296,13 +296,16 @@ for name, path in pairs(PATHS) do
 	local module = getForkedFolder():FindFirstChild(name, true)
 	local container = generateRow(name, if module then module:GetAttribute("LastUpdate") else "unknown", true)
 	local lastUpdate = container:FindFirstChild("LastUpdate")
+	local updateButton = container:FindFirstChild("Update")
+	updateButton.Text = if module then "Update" else "Grab"
 	
-	container:FindFirstChild("Update").Activated:Connect(function()
+	updateButton.Activated:Connect(function()
 		if PluginCurrentlyProcessing then return end
 		PluginCurrentlyProcessing = true
 		updateModule(name)
 		PluginCurrentlyProcessing = false
 		lastUpdate.Text = getForkedFolder():FindFirstChild(name, true):GetAttribute("LastUpdate") or "unknown"
+		updateButton.Text = "Update"
 	end)
 	if module then
 		module:GetAttributeChangedSignal("LastUpdate"):Connect(function()
@@ -315,6 +318,12 @@ for name, path in pairs(PATHS) do
 			descendant:GetAttributeChangedSignal("LastUpdate"):Connect(function()
 				lastUpdate.Text = descendant:GetAttribute("LastUpdate") or "unknown"
 			end)
+		end
+	end)
+	StarterPlayerScripts.DescendantRemoving:Connect(function(descendant)
+		if descendant.Name == name then
+			lastUpdate.Text = "unknown"
+			updateButton.Text = "Grab"
 		end
 	end)
 end
