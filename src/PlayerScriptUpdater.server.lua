@@ -115,6 +115,7 @@ local function createDifferencePrompt(original: string, new: string, moduleName:
 			local temp = Instance.new("ModuleScript")
 			temp.Name = ("Updated %s | Changes Save | Close to Continue"):format(moduleName)
 			temp.Source = new
+			temp.Archivable = false
 			temp.Parent = workspace
 			plugin:OpenScript(temp)
 			Utils.waitForCondition(ScriptEditorService.TextDocumentDidClose, function(doc)
