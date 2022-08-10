@@ -8,9 +8,7 @@ local TEXT_GUIS = {
 
 local function setThemeColors(object: GuiObject)
 	if not object:IsA("GuiObject") then return end
-	if object:GetAttribute("BackgroundColor3") then
-		object.BackgroundColor3 = object:GetAttribute("BackgroundColor3")
-	elseif object:IsA("GuiButton") then
+	if object:IsA("GuiButton") then
 		object.BackgroundColor3 = settings().Studio.Theme:GetColor(Enum.StudioStyleGuideColor.MainButton)
 		object.BorderColor3 = settings().Studio.Theme:GetColor(Enum.StudioStyleGuideColor.ButtonBorder)
 		if not object:FindFirstChildOfClass("UICorner") then
@@ -33,6 +31,7 @@ local function setThemeColors(object: GuiObject)
 		object.TextColor3 = settings().Studio.Theme:GetColor(Enum.StudioStyleGuideColor.MainText)
 	end
 	if object:GetAttribute("TextSize") then object.TextSize = object:GetAttribute("TextSize") end
+	if object:GetAttribute("BackgroundColor3") then object.BackgroundColor3 = object:GetAttribute("BackgroundColor3") end
 end
 
 local function applySyncThemeColors(object: GuiObject)
