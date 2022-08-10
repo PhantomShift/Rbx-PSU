@@ -1,5 +1,6 @@
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 
+local Maid = require(script.Parent.Maid)
 local Diff = require(script.Parent.Diff)
 local Utils = require(script.Parent.Utils)
 local ClientTrackerAPI = require(script.Parent.ClientTrackerAPI)
@@ -15,6 +16,10 @@ local PATHS = ClientTrackerAPI.PATHS
 local DEPENDS = ClientTrackerAPI.DEPENDS
 
 local PluginCurrentlyProcessing = false
+
+local function getStudiothemeColor(color: Enum.StudioStyleGuideColor)
+	return settings().Studio.Theme:GetColor(color)
+end
 
 local function getForkedFolder()
 	if StarterPlayerScripts:FindFirstChild("_Forked") then
@@ -122,55 +127,245 @@ local function createDifferencePrompt(original: string, new: string, moduleName:
 			-- Render difference prompt
 			local diffWidget: DockWidgetPluginGui = plugin:CreateDockWidgetPluginGui("ScriptDifferencesPrompt", widgetInfo)
 			diffWidget.Title = ("Changes to %s | Close to Continue"):format(moduleName)
-			local container = Instance.new("ScrollingFrame")
-			container.Size = UDim2.fromScale(1, 1)
-			container.AutomaticCanvasSize = Enum.AutomaticSize.XY
-			local listlayout = Instance.new("UIListLayout")
-			listlayout.Parent = container
-			listlayout.SortOrder = Enum.SortOrder.LayoutOrder
-			for i, diff in ipairs(difference) do
-				local row = Instance.new("Frame")
-				row.LayoutOrder = i
-				row.Size = UDim2.new(1, 0, 0, 20)
-				row.AutomaticSize = Enum.AutomaticSize.X
-				row:SetAttribute("BackgroundColor3", settings().Studio.Theme:GetColor(
-					if diff.token == Diff.INSERT_TOKEN then Enum.StudioStyleGuideColor.DiffTextAdditionBackground
-					elseif diff.token == Diff.REMOVE_TOKEN then Enum.StudioStyleGuideColor.DiffTextDeletionBackground
-					else Enum.StudioStyleGuideColor.DiffTextNoChangeBackground
-				))
-				local box = Instance.new("TextBox")
-				box.Text = diff.str:gsub("\t", "    ")
-				box.Size = UDim2.new(1, -50, 1, 0)
-				box.AutomaticSize = Enum.AutomaticSize.X
-				box.Position = UDim2.fromOffset(50, 0)
-				box.BackgroundTransparency = 1
-				box.TextEditable = false
-				box.ClearTextOnFocus = false
-				box.TextXAlignment = Enum.TextXAlignment.Left
-				box:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
-				box:SetAttribute("TextSize", 18)
-				local line = Instance.new("TextBox")
-				line.Text = tostring(i)
-				line.Size = UDim2.new(0, 30, 1, 0)
-				line.Position = UDim2.fromOffset(20, 0)
-				line.BackgroundTransparency = 1
-				line.TextEditable = false
-				line.ClearTextOnFocus = false
-				local token = Instance.new("TextLabel")
-				token.Text = diff.token
-				token.Size = UDim2.new(0, 20, 1, 0)
-				token.BackgroundTransparency = 1
+
+			if Env("unifiedDiffPrompt") then
+				local container = Instance.new("ScrollingFrame")
+				container.Size = UDim2.fromScale(1, 1)
+				container.AutomaticCanvasSize = Enum.AutomaticSize.XY
+				local listlayout = Instance.new("UIListLayout")
+				listlayout.Parent = container
+				listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+				for i, diff in ipairs(difference) do
+					local row = Instance.new("Frame")
+					row.LayoutOrder = i
+					row.Size = UDim2.new(1, 0, 0, 20)
+					row.AutomaticSize = Enum.AutomaticSize.X
+					row:SetAttribute("BackgroundColor3", settings().Studio.Theme:GetColor(
+						if diff.token == Diff.INSERT_TOKEN then Enum.StudioStyleGuideColor.DiffTextAdditionBackground
+						elseif diff.token == Diff.REMOVE_TOKEN then Enum.StudioStyleGuideColor.DiffTextDeletionBackground
+						else Enum.StudioStyleGuideColor.DiffTextNoChangeBackground
+					))
+					local box = Instance.new("TextBox")
+					box.Text = diff.str:gsub("\t", "    ")
+					box.Size = UDim2.new(1, -50, 1, 0)
+					box.AutomaticSize = Enum.AutomaticSize.X
+					box.Position = UDim2.fromOffset(50, 0)
+					box.BackgroundTransparency = 1
+					box.TextEditable = false
+					box.ClearTextOnFocus = false
+					box.TextXAlignment = Enum.TextXAlignment.Left
+					box:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
+					box:SetAttribute("TextSize", 18)
+					local line = Instance.new("TextBox")
+					line.Text = tostring(i)
+					line.Size = UDim2.new(0, 30, 1, 0)
+					line.Position = UDim2.fromOffset(20, 0)
+					line.BackgroundTransparency = 1
+					line.TextEditable = false
+					line.ClearTextOnFocus = false
+					local token = Instance.new("TextLabel")
+					token.Text = diff.token
+					token.Size = UDim2.new(0, 20, 1, 0)
+					token.BackgroundTransparency = 1
+		
+					line.Parent = row
+					token.Parent = row
+					box.Parent = row
+		
+					row.Parent = container
+				end
+				container.Parent = diffWidget
+				applyThemeWidget(diffWidget)
+				diffWidget:BindToClose(function() diffWidget:Destroy() end)
+				diffWidget.AncestryChanged:Wait()
+			else
+
+				local container = Instance.new("ScrollingFrame")
+				container.Size = UDim2.new(1, 0, 1, -20)
+				container.ScrollingDirection = Enum.ScrollingDirection.Y
+				-- container.AutomaticCanvasSize = Enum.AutomaticSize.XY
+				local originalFrame = Instance.new("ScrollingFrame")
+				originalFrame.ScrollingDirection = Enum.ScrollingDirection.X
+				originalFrame.Size = UDim2.fromScale(0.5, 1)
+				originalFrame.AutomaticCanvasSize = Enum.AutomaticSize.X
+				originalFrame.AutomaticSize = Enum.AutomaticSize.Y
+				originalFrame.ScrollBarThickness = 0
+				local newFrame = originalFrame:Clone()
+				newFrame.Position = UDim2.fromScale(0.5, 0)
+				local originalListlayout = Instance.new("UIListLayout")
+				originalListlayout.Parent = originalFrame
+				originalListlayout.SortOrder = Enum.SortOrder.LayoutOrder
+				local newListLayout = originalListlayout:Clone()
+				newListLayout.Parent = newFrame
 	
-				line.Parent = row
-				token.Parent = row
-				box.Parent = row
+				local scrollBar = Instance.new("Frame")
+				scrollBar.Size = UDim2.new(1, 0, 0, 20)
+				scrollBar:SetAttribute("BackgroundColor3", getStudiothemeColor(Enum.StudioStyleGuideColor.ScrollBarBackground))
+				scrollBar.AnchorPoint = Vector2.new(0, 1)
+				scrollBar.Position = UDim2.fromScale(0, 1)
+				local hiddenScroll = Instance.new("Frame")
+				hiddenScroll.Size = UDim2.new(1, -40, 1, 0)
+				hiddenScroll.AnchorPoint = Vector2.new(0.5, 0.5)
+				hiddenScroll.Position = UDim2.fromScale(0.5, 0.5)
+				hiddenScroll.Active = false
+				hiddenScroll.BackgroundTransparency = 1
+				hiddenScroll.Parent = scrollBar
+				local scroll = Instance.new("Frame")
+				scroll.Active = false
+				scroll.Size = UDim2.new(0, 40, 1, 0)
+				scroll:SetAttribute("BackgroundColor3", getStudiothemeColor(Enum.StudioStyleGuideColor.ScrollBar))
+				scroll.AnchorPoint = Vector2.new(0.5, 0)
+				scroll.Parent = hiddenScroll
 	
-				row.Parent = container
+				local baseRow = Instance.new("Frame")
+				baseRow.Size = UDim2.new(1, 0, 0, 20)
+				baseRow.AutomaticSize = Enum.AutomaticSize.X
+				local baseBox = Instance.new("TextBox")
+				-- baseBox.Text = diff.str:gsub("\t", "    ")
+				baseBox.Size = UDim2.new(2.2, -50, 1, 0)
+				baseBox.AutomaticSize = Enum.AutomaticSize.X
+				baseBox.Position = UDim2.fromOffset(50, 0)
+				baseBox.BackgroundTransparency = 1
+				baseBox.TextEditable = false
+				baseBox.ClearTextOnFocus = false
+				baseBox.TextXAlignment = Enum.TextXAlignment.Left
+				baseBox:SetAttribute("Font", Enum.Font.SourceSansSemibold.Name)
+				baseBox:SetAttribute("TextSize", 18)
+				local baseNumber = baseBox:Clone()
+				baseNumber.Size = UDim2.new(0, 40, 1, 0)
+				baseNumber.Position = UDim2.new(0, 0)
+				baseNumber.TextXAlignment = Enum.TextXAlignment.Right
+	
+				local originalLines = original:split("\n")
+				local newLines = new:split("\n")
+				local origCalcLine = 1
+				local newCalcLine = 1
+				for i, diff in ipairs(difference) do
+					local originalLineNumber = table.find(originalLines, diff.str, origCalcLine)
+					local newLineNumber = table.find(newLines, diff.str, newCalcLine)
+
+					if diff.token == Diff.INSERT_TOKEN then
+						if difference[i-1].token == Diff.REMOVE_TOKEN then
+							newFrame:FindFirstChild(tostring(i - 1)):Destroy()
+							newCalcLine -= 1
+						end
+						local newRow = baseRow:Clone()
+						newRow.Name = i
+						newRow.LayoutOrder = i
+						newRow:SetAttribute("BackgroundColor3", getStudiothemeColor(Enum.StudioStyleGuideColor.DiffTextAdditionBackground))
+						local newBox = baseBox:Clone()
+						newBox.Text = diff.str:gsub("\t", "    ")
+						local newNumber = baseNumber:Clone()
+						newNumber.Text = newLineNumber
+
+						local originalRow = baseRow:Clone()
+						originalRow.Name = i
+						originalRow.LayoutOrder = i
+	
+						newBox.Parent = newRow
+						newNumber.Parent = newRow
+						newRow.Parent = newFrame
+						originalRow.Parent = originalFrame
+
+						newCalcLine += 1
+					elseif diff.token == Diff.REMOVE_TOKEN then
+						local newRow = baseRow:Clone()
+						newRow.Name = i
+						newRow.LayoutOrder = i
+						
+						local originalRow = baseRow:Clone()
+						originalRow.Name = i
+						originalRow.LayoutOrder = i
+						originalRow:SetAttribute("BackgroundColor3", getStudiothemeColor(Enum.StudioStyleGuideColor.DiffTextDeletionBackground))
+						local originalBox = baseBox:Clone()
+						originalBox.Text = diff.str:gsub("\t", "    ")
+						local originalNumber = baseNumber:Clone()
+						originalNumber.Text = originalLineNumber
+	
+						newRow.Parent = newFrame
+						originalBox.Parent = originalRow
+						originalNumber.Parent = originalRow
+						originalRow.Parent = originalFrame
+
+						origCalcLine += 1
+					else
+						if difference[i-2] and difference[i-2].token == Diff.REMOVE_TOKEN and difference[i-1].token == Diff.INSERT_TOKEN then
+							originalFrame:FindFirstChild(tostring(i - 1)):Destroy()
+							origCalcLine -= 1
+						end
+						local newRow = baseRow:Clone()
+						newRow.Name = i
+						newRow.LayoutOrder = i
+						newRow:SetAttribute("BackgroundColor3", getStudiothemeColor(Enum.StudioStyleGuideColor.DiffTextNoChangeBackground))
+						local newBox = baseBox:Clone()
+						newBox.Text = diff.str:gsub("\t", "    ")
+						newBox.Parent = newRow
+
+						local originalRow = newRow:Clone()
+
+						local newNumber = baseNumber:Clone()
+						newNumber.Text = newLineNumber
+						local originalNumber = baseNumber:Clone()
+						originalNumber.Text = originalLineNumber
+
+						
+						newNumber.Parent = newRow
+						newRow.Parent = newFrame
+						originalNumber.Parent = originalRow
+						originalRow.Parent = originalFrame
+
+						newCalcLine += 1
+						origCalcLine += 1
+					end
+				end
+	
+				container.CanvasSize = UDim2.new(1, 0, 0, newFrame.AbsoluteSize.Y)
+				originalFrame.Parent = container
+				newFrame.Parent = container
+				container.Parent = diffWidget
+				scrollBar.Parent = diffWidget
+				
+				applyThemeWidget(diffWidget)
+				diffWidget:BindToClose(function() diffWidget:Destroy() end)
+				
+				local function getScrollPercent(mousePosX: number)
+					return (mousePosX - hiddenScroll.AbsolutePosition.X) / hiddenScroll.AbsoluteSize.X
+				end
+				local function changeScrollPosition(num: number)
+					num = math.clamp(num, 0, 1)
+					scroll.Position = UDim2.fromScale(num, 0)
+					newFrame.CanvasPosition = newFrame.AbsoluteCanvasSize * Vector2.new(num, 0) / 2
+					originalFrame.CanvasPosition = originalFrame.AbsoluteCanvasSize * Vector2.new(num, 0) / 2
+				end
+				local scrollMaid = Maid.new()
+				scrollMaid.InputBegan = scrollBar.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						changeScrollPosition(getScrollPercent(input.Position.X))
+						scrollMaid.MouseMoved = Maid.new()
+						for _, descendant in pairs(diffWidget:GetDescendants()) do
+							if not descendant:IsA("GuiObject") then continue end
+							scrollMaid.MouseMoved:GiveTask(descendant.InputChanged:Connect(function(input)
+								if input.UserInputType == Enum.UserInputType.MouseMovement then
+									changeScrollPosition(getScrollPercent(input.Position.X))
+								end
+							end))
+						end
+					end
+				end)
+				scrollMaid.InputEnded = scrollBar.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						scrollMaid.MouseMoved = nil
+					end
+				end)
+				scrollMaid.Scrolled = scrollBar.InputChanged:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseWheel then
+						changeScrollPosition(scroll.Position.X.Scale + 0.2 * input.Position.Z)
+					end
+				end)
+				
+				diffWidget.AncestryChanged:Wait()
+				scrollMaid:Destroy()
 			end
-			container.Parent = diffWidget
-			applyThemeWidget(diffWidget)
-			diffWidget:BindToClose(function() diffWidget:Destroy() end)
-			diffWidget.AncestryChanged:Wait()
 		end
 	end
 	

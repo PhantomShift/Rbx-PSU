@@ -11,7 +11,11 @@ return {
     -- Highlighting differences is unfortunately not supported,
     -- but changes made to the temporary script will be applied
     -- No effect if skipDifferencePrompt is true
-    scriptEditorServiceBeta = false
+    scriptEditorServiceBeta = false,
+
+    -- Use the unified different viewer instead of the split viewer
+    -- (Changes are all in one page instead of two)
+    unifiedDiffPrompt = false
 }
 ]]
 
@@ -43,6 +47,6 @@ end)
 
 -- Returns environment variable for Rbx-PSU  
 -- Environment variables can be set via the `Environment` toolbar button
-return function(variable: "skipDifferencePrompt" | "alwaysUpdate" | "scriptEditorServiceBeta")
+return function(variable: "skipDifferencePrompt" | "alwaysUpdate" | "scriptEditorServiceBeta" | "unifiedDiffPrompt")
     return require(proxyEnvironment)[variable]
 end
