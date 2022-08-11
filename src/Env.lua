@@ -15,7 +15,10 @@ return {
 
     -- Use the unified different viewer instead of the split viewer
     -- (Changes are all in one page instead of two)
-    unifiedDiffPrompt = false
+    unifiedDiffPrompt = false,
+
+    -- Check for updates when Studio starts up and mark old scripts as outdated
+    checkUpdates = true
 }
 ]]
 
@@ -48,6 +51,6 @@ end)
 
 -- Returns environment variable for Rbx-PSU  
 -- Environment variables can be set via the `Environment` toolbar button
-return function(variable: "skipDifferencePrompt" | "alwaysUpdate" | "scriptEditorServiceBeta" | "unifiedDiffPrompt")
+return function(variable: "skipDifferencePrompt" | "alwaysUpdate" | "scriptEditorServiceBeta" | "unifiedDiffPrompt" | "checkUpdates")
     return require(proxyEnvironment)[variable]
 end

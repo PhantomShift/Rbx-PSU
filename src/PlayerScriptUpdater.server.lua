@@ -537,3 +537,15 @@ openEnv.Click:Connect(function()
 		plugin:OpenScript(game:GetService("AnalyticsService"):FindFirstChild("RobloxPSU_Environment"))
 	end)
 end)
+
+if Env("checkUpdates") then
+	for name, _ in pairs(PATHS) do
+		local module = getForkedFolder():FindFirstChild(name, true)
+		if module then
+			local commitDate = ClientTrackerAPI.getLastCommitDate(name)
+			if commitDate ~= "unknown" and commitDate ~= module:GetAttribute("LastUpdate") then
+				module:SetAttribute("LastUpdate", "(Outdated)"..(module:GetAttribute("LastUpdate") or "unknown"))
+			end
+		end
+	end
+end

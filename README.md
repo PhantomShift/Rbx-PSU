@@ -48,7 +48,7 @@ Alternatively, if using the VSCode extension, open the shortcuts, run `>Rojo: Bu
 ### Environment Variables
 There are a couple of environment variables that can be used to change the plugin's behavior. These variables can be accessed via the toolbar.
 ```lua
--- Example
+-- Default Environment
 return {
     -- Whether or not to skip viewing differences on updated modules
     skipDifferencePrompt = false,
@@ -61,6 +61,13 @@ return {
     -- Highlighting differences is unfortunately not supported,
     -- but changes made to the temporary script will be applied
     -- No effect if skipDifferencePrompt is true
-    scriptEditorServiceBeta = false
+    scriptEditorServiceBeta = false,
+
+    -- Use the unified different viewer instead of the split viewer
+    -- (Changes are all in one page instead of two)
+    unifiedDiffPrompt = false,
+
+    -- Check for updates when Studio starts up and mark old scripts as outdated
+    checkUpdates = true
 }
 ```
